@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPS Inventaire — Matériel Sportif</title>
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --vert:    #1a5c3a;
+    --vert-m:  #2d8653;
+    --vert-l:  #e8f5ee;
+    --blanc:   #f8faf9;
+    --gris-1:  #f0f2f1;
+    --gris-2:  #d4dbd7;
+    --gris-3:  #8a9e94;
+    --encre:   #1a2520;
+    --orange:  #e07b2a;
+    --rouge:   #c0392b;
+    --jaune:   #d4a017;
+    --bleu:    #2471a3;
+    --r: 8px;
+    --ombre: 0 2px 12px rgba(26,92,58,.10);
+    font-size: 15px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--blanc);
+    color: var(--encre);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--vert);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    padding: 22px 18px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+  .logo h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .02em;
+    line-height: 1.3;
+  }
+  .logo span {
+    font-size: .72rem;
+    color: rgba(255,255,255,.6);
+    font-weight: 400;
+    display: block;
+    margin-top: 2px;
+  }
+
+  nav { flex: 1; padding: 12px 0; }
+  nav button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 18px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,.75);
+    font-size: .88rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent;
+  }
+  nav button:hover { background: rgba(255,255,255,.08); color: #fff; }
+  nav button.active {
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    border-left-color: #6ee7a0;
+  }
+  nav button .ico { font-size: 1.1rem; width: 22px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 12px 18px;
+    font-size: .72rem;
+    color: rgba(255,255,255,.35);
+    border-top: 1px solid rgba(255,255,255,.1);
+  }
+
+  /* ── Main ── */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page { display: none; padding: 28px 32px; flex: 1; }
+  .page.active { display: block; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .page-header h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--vert);
+  }
+  .page-header p { color: var(--gris-3); font-size: .85rem; margin-top: 2px; }
+
+  /* ── Boutons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--r);
+    font-size: .85rem; font-weight: 600; cursor: pointer;
+    border: none; transition: all .15s;
+  }
+  .btn-primary { background: var(--vert); color: #fff; }
+  .btn-primary:hover { background: var(--vert-m); }
+  .btn-danger  { background: var(--rouge); color: #fff; }
+  .btn-danger:hover { opacity:.85; }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--gris-2);
+    color: var(--encre);
+  }
+  .btn-outline:hover { border-color: var(--vert); color: var(--vert); }
+  .btn-sm { padding: 5px 10px; font-size: .78rem; }
+  .btn-icon {
+    width: 30px; height: 30px; padding: 0;
+    border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+
+  /* ── Cards & grilles ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 14px; margin-bottom: 24px; }
+  .card {
+    background: #fff;
+    border-radius: var(--r);
+    padding: 16px 18px;
+    box-shadow: var(--ombre);
+    border: 1px solid var(--gris-2);
+  }
+  .card-value { font-size: 2rem; font-weight: 800; color: var(--vert); line-height: 1; }
+  .card-label { font-size: .78rem; color: var(--gris-3); margin-top: 4px; }
+
+  /* ── Badges état ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+  }
+  .badge-correct   { background: #d1f5de; color: #1a5c3a; }
+  .badge-degrade   { background: #fef3cd; color: #7d5b00; }
+  .badge-inutilisable { background: #fde8e8; color: #8b1a1a; }
+
+  /* ── Progress bar ── */
+  .progress-bar { height: 10px; border-radius: 99px; background: var(--gris-2); overflow: hidden; display: flex; }
+  .pb-correct     { background: #2d8653; }
+  .pb-degrade     { background: var(--jaune); }
+  .pb-inutilisable{ background: var(--rouge); }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  thead th {
+    background: var(--gris-1);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--gris-3);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border-bottom: 2px solid var(--gris-2);
+  }
+  tbody tr { border-bottom: 1px solid var(--gris-1); transition: background .1s; }
+  tbody tr:hover { background: var(--vert-l); }
+  tbody td { padding: 10px 12px; vertical-align: middle; }
+  tbody tr:last-child { border-bottom: none; }
+
+  /* ── Formulaire ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: .8rem; font-weight: 600; color: var(--gris-3); }
+  input, select, textarea {
+    border: 1.5px solid var(--gris-2);
+    border-radius: var(--r);
+    padding: 8px 11px;
+    font-size: .88rem;
+    color: var(--encre);
+    background: #fff;
+    transition: border .15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--vert);
+    box-shadow: 0 0 0 3px rgba(26,92,58,.1);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ── Etat individuel par unité ── */
+  .qty-states { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .qty-state-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    border: 2px solid var(--gris-2); border-radius: var(--r);
+    padding: 8px 12px; font-size: .82rem; font-weight: 600;
+    cursor: pointer; background: var(--gris-1);
+    transition: all .15s; min-width: 64px; user-select: none;
+  }
+  .qty-state-btn .unit-num { font-size: .68rem; color: var(--gris-3); font-weight: 400; }
+  .qty-state-btn.etat-correct      { background: #d1f5de; border-color: #2d8653; color: #1a5c3a; }
+  .qty-state-btn.etat-degrade      { background: #fef3cd; border-color: #d4a017; color: #7d5b00; }
+  .qty-state-btn.etat-inutilisable { background: #fde8e8; border-color: #c0392b; color: #8b1a1a; }
+  .qty-state-btn:hover { transform: scale(1.06); }
+
+  /* ── Bloc matériel inventaire ── */
+  .inv-item {
+    background: #fff;
+    border: 1px solid var(--gris-2);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--ombre);
+  }
+  .inv-item-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .inv-item-name { font-weight: 700; font-size: .95rem; }
+  .inv-item-meta { font-size: .75rem; color: var(--gris-3); margin-top: 2px; }
+  .inv-item-img {
+    width: 56px; height: 56px; object-fit: cover;
+    border-radius: 6px; border: 1px solid var(--gris-2);
+  }
+  .inv-item-img-placeholder {
+    width: 56px; height: 56px;
+    background: var(--gris-1); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: var(--gris-3);
+  }
+
+  /* ── Recherche casal ── */
+  .casal-result {
+    background: #fff;
+    border: 1px solid var(--gris-2);
+    border-radius: var(--r);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color .15s;
+    cursor: pointer;
+  }
+  .casal-result:hover { border-color: var(--vert); }
+  .casal-result-info { flex: 1; min-width: 0; }
+  .casal-result-name { font-weight: 600; font-size: .9rem; }
+  .casal-result-meta { font-size: .75rem; color: var(--gris-3); }
+  .casal-price { font-weight: 700; color: var(--vert); font-size: .9rem; white-space: nowrap; }
+
+  /* ── Commande ── */
+  .cmd-item {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1px solid var(--gris-2);
+    border-radius: var(--r); padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .cmd-item-name { flex: 1; font-weight: 600; font-size: .88rem; }
+  .cmd-item-meta { font-size: .75rem; color: var(--gris-3); }
+  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .qty-ctrl button {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1.5px solid var(--gris-2);
+    background: none; cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .1s;
+  }
+  .qty-ctrl button:hover { border-color: var(--vert); color: var(--vert); }
+  .qty-ctrl span { min-width: 28px; text-align: center; font-weight: 700; }
+
+  /* ── Historique ── */
+  .hist-item {
+    background: #fff; border: 1px solid var(--gris-2);
+    border-radius: var(--r); padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .hist-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: .75rem; font-weight: 700;
+  }
+  .hist-en-cours  { background: #fef3cd; color: #7d5b00; }
+  .hist-arrivee   { background: #d1f5de; color: #1a5c3a; }
+
+  /* ── Réparation ── */
+  .rep-item {
+    background: #fff; border-left: 4px solid var(--orange);
+    border-radius: var(--r); padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--ombre);
+    border-top: 1px solid var(--gris-2);
+    border-right: 1px solid var(--gris-2);
+    border-bottom: 1px solid var(--gris-2);
+  }
+  .rep-item.priorite-haute { border-left-color: var(--rouge); }
+  .rep-item.priorite-basse { border-left-color: var(--gris-3); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px;
+    padding: 28px; max-width: 620px; width: 95%;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  }
+  .modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--vert); }
+
+  /* ── Upload image ── */
+  .img-upload {
+    border: 2px dashed var(--gris-2);
+    border-radius: var(--r);
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s;
+    font-size: .83rem;
+    color: var(--gris-3);
+  }
+  .img-upload:hover { border-color: var(--vert); color: var(--vert); }
+  .img-preview-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .img-preview-grid img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 1px solid var(--gris-2); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 18px; }
+  .tab-btn {
+    padding: 7px 16px; border-radius: var(--r);
+    border: 1.5px solid var(--gris-2);
+    background: none; cursor: pointer; font-size: .83rem;
+    font-weight: 600; color: var(--gris-3); transition: all .15s;
+  }
+  .tab-btn.active { background: var(--vert); color: #fff; border-color: var(--vert); }
+
+  /* ── Separateur ── */
+  .sep { height: 1px; background: var(--gris-2); margin: 20px 0; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 22px; right: 22px;
+    background: var(--vert); color: #fff;
+    padding: 11px 20px; border-radius: var(--r);
+    font-size: .88rem; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    transform: translateY(80px); opacity: 0;
+    transition: all .3s; z-index: 9999;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gris-2); border-radius: 99px; }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    color: var(--gris-3); font-size: .9rem;
+  }
+  .empty-state .ico { font-size: 2.5rem; margin-bottom: 12px; }
+
+  @media(max-width:700px){
+    #sidebar { width: 56px; min-width: 56px; }
+    .logo h1, .logo span, .nav-label, .sidebar-footer { display: none; }
+    nav button { justify-content: center; padding: 12px; }
+    .page { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div class="logo">
+    <h1>🏃 EPS Inventaire</h1>
+    <span>Gestion du matériel</span>
+  </div>
+  <nav>
+    <button class="active" onclick="nav('recap')">
+      <span class="ico">📊</span><span class="nav-label">Récapitulatif</span>
+    </button>
+    <button onclick="nav('ajout')">
+      <span class="ico">➕</span><span class="nav-label">Ajouter matériel</span>
+    </button>
+    <button onclick="nav('recherche')">
+      <span class="ico">🔍</span><span class="nav-label">Rechercher</span>
+    </button>
+    <button onclick="nav('commande')">
+      <span class="ico">🛒</span><span class="nav-label">Commander</span>
+    </button>
+    <button onclick="nav('historique')">
+      <span class="ico">📋</span><span class="nav-label">Historique</span>
+    </button>
+    <button onclick="nav('reparation')">
+      <span class="ico">🔧</span><span class="nav-label">Réparation</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">v1.0 — EPS 2025</div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main id="main">
+
+  <!-- ══ RÉCAPITULATIF ══ -->
+  <div id="page-recap" class="page active">
+    <div class="page-header">
+      <div>
+        <h2>Récapitulatif</h2>
+        <p>Vue d'ensemble de l'inventaire</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label style="font-size:.78rem;color:var(--gris-3);font-weight:600">Trier par</label>
+        <select id="recap-tri" onchange="renderRecap()" style="min-width:160px">
+          <option value="ajout">Ordre d'ajout</option>
+          <option value="alpha">Alphabétique</option>
+          <option value="sport">📁 Par famille (Sport)</option>
+          <option value="correct">État : Correct d'abord</option>
+          <option value="degrade">État : Dégradé d'abord</option>
+          <option value="inutilisable">État : Inutilisable d'abord</option>
+        </select>
+      </div>
+    </div>
+    <div class="cards" id="recap-cards"></div>
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--gris-3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">
+      État global
+    </h3>
+    <div class="card" style="margin-bottom:24px">
+      <div id="recap-global-bar" style="margin-bottom:10px"></div>
+      <div id="recap-global-legend" style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem"></div>
+    </div>
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--gris-3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em">
+      Détail par matériel
+    </h3>
+    <div id="recap-list"></div>
+  </div>
+
+  <!-- ══ AJOUT MATÉRIEL ══ -->
+  <div id="page-ajout" class="page">
+    <div class="page-header">
+      <div><h2>Ajouter du matériel</h2><p>Enregistrer un nouvel article dans l'inventaire</p></div>
+    </div>
+
+    <div class="card" style="max-width:760px">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Nom du matériel *</label>
+          <input id="f-nom" type="text" placeholder="Ex : Plots de marquage, Haies réglables…">
+        </div>
+        <div class="form-group">
+          <label>Quantité *</label>
+          <input id="f-qty" type="number" min="1" value="1" oninput="buildQtyStates()">
+        </div>
+        <div class="form-group">
+          <label>Date d'entrée</label>
+          <input id="f-date" type="date">
+        </div>
+        <div class="form-group">
+          <label>Référence Casal Sport (optionnel)</label>
+          <div style="display:flex;gap:8px">
+            <input id="f-ref" type="text" placeholder="Ex : PLT-42" style="flex:1">
+            <button class="btn btn-outline btn-sm" onclick="openCasalModal('ajout')">Chercher</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Sport / Activité (optionnel)</label>
+          <input id="f-sport" type="text" placeholder="Ex : Athlétisme, Jeux collectifs…">
+        </div>
+        <div class="form-group full">
+          <label>État général (si identique pour tous)</label>
+          <select id="f-etat-global" onchange="buildQtyStates()">
+            <option value="">— Définir état par unité —</option>
+            <option value="Correct">✅ Correct</option>
+            <option value="Dégradé">⚠️ Dégradé</option>
+            <option value="Inutilisable">❌ Inutilisable</option>
+          </select>
+        </div>
+        <div class="form-group full" id="qty-states-wrap">
+          <label>État par unité</label>
+          <div class="qty-states" id="qty-states"></div>
+        </div>
+        <div class="form-group full">
+          <label>Notes / Observations</label>
+          <textarea id="f-notes" placeholder="Informations complémentaires…"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Photos du matériel</label>
+          <div class="img-upload" onclick="document.getElementById('img-inp').click()">
+            📷 Cliquez pour ajouter des photos
+          </div>
+          <input id="img-inp" type="file" accept="image/*" multiple style="display:none" onchange="previewImages(this)">
+          <div class="img-preview-grid" id="img-preview"></div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="clearForm()">Réinitialiser</button>
+        <button class="btn btn-primary" onclick="saveItem()">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RECHERCHE ══ -->
+  <div id="page-recherche" class="page">
+    <div class="page-header">
+      <div><h2>Rechercher du matériel</h2><p>Catalogue Casal Sport et inventaire</p></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchSearchTab('casal',this)">Catalogue Casal</button>
+      <button class="tab-btn" onclick="switchSearchTab('inventaire',this)">Mon inventaire</button>
+    </div>
+
+    <div id="stab-casal">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input id="src-q" type="text" placeholder="Nom, marque, sport…" style="flex:1;min-width:180px" oninput="searchCasal()">
+        <select id="src-sport" onchange="searchCasal()" style="min-width:160px">
+          <option value="">Tous les sports</option>
+        </select>
+        <!-- filtre catégorie désactivé (données non disponibles) -->
+      </div>
+      <div id="casal-results"></div>
+    </div>
+
+    <div id="stab-inventaire" style="display:none">
+      <input id="inv-q" type="text" placeholder="Nom, sport, référence…" style="width:100%;margin-bottom:14px" oninput="searchInventaire()">
+      <div id="inv-results"></div>
+    </div>
+  </div>
+
+  <!-- ══ COMMANDE ══ -->
+  <div id="page-commande" class="page">
+    <div class="page-header">
+      <div><h2>Commander</h2><p>Matériel inutilisable et articles à renouveler</p></div>
+      <button class="btn btn-primary" onclick="passerCommande()">📤 Passer la commande</button>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="openCasalModal('commande')">+ Ajouter depuis catalogue Casal</button>
+      <button class="btn btn-outline" onclick="openFreeModal()">+ Ajouter article libre</button>
+    </div>
+
+    <div id="commande-list"></div>
+
+    <div id="commande-total" class="card" style="margin-top:16px;text-align:right;display:none">
+      <div style="font-size:.8rem;color:var(--gris-3)">Total indicatif (articles référencés)</div>
+      <div id="commande-total-val" style="font-size:1.6rem;font-weight:800;color:var(--vert)"></div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORIQUE ══ -->
+  <div id="page-historique" class="page">
+    <div class="page-header">
+      <div><h2>Historique</h2><p>Commandes et modifications d'inventaire</p></div>
+    </div>
+    <div id="historique-list"></div>
+  </div>
+
+  <!-- ══ RÉPARATION ══ -->
+  <div id="page-reparation" class="page">
+    <div class="page-header">
+      <div><h2>Réparation</h2><p>Matériel dégradé ou inutilisable</p></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <select id="rep-filtre" onchange="renderReparation()" style="min-width:160px">
+        <option value="tous">Tous les états</option>
+        <option value="Inutilisable">Inutilisable seulement</option>
+        <option value="Dégradé">Dégradé seulement</option>
+      </select>
+      <select id="rep-tri" onchange="renderReparation()" style="min-width:160px">
+        <option value="priorite">Par priorité</option>
+        <option value="nom">Par nom</option>
+        <option value="qty">Par quantité</option>
+      </select>
+    </div>
+    <div id="reparation-list"></div>
+  </div>
+</main>
+
+<!-- ══ MODAL CASAL ══ -->
+<div class="modal-overlay" id="modal-casal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0">🔍 Catalogue Casal Sport</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-casal')">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="modal-q" type="text" placeholder="Chercher…" style="flex:1" oninput="modalSearch()">
+      <select id="modal-sport" onchange="modalSearch()" style="min-width:140px">
+        <option value="">Tous sports</option>
+      </select>
+    </div>
+    <div id="modal-results" style="max-height:380px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL ARTICLE LIBRE ══ -->
+<div class="modal-overlay" id="modal-libre">
+  <div class="modal">
+    <h3>➕ Article libre</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nom de l'article *</label>
+        <input id="fl-nom" type="text" placeholder="Nom du matériel">
+      </div>
+      <div class="form-group">
+        <label>Quantité</label>
+        <input id="fl-qty" type="number" min="1" value="1">
+      </div>
+      <div class="form-group">
+        <label>Prix unitaire estimé (€)</label>
+        <input id="fl-prix" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="fl-notes" placeholder="Informations…" style="min-height:50px"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-outline" onclick="closeModal('modal-libre')">Annuler</button>
+      <button class="btn btn-primary" onclick="addFreeToOrder()">Ajouter à la commande</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CATALOGUE CASAL SPORT (extrait du catalogue PDF)
+// ══════════════════════════════════════════
+var CASAL=[{"ref":"TH82","nom":"Claquoir de départ en bois","sport":"Athlétisme","prix":17.9},{"ref":"AT1056","nom":"Haies PVC GES","sport":"Athlétisme","prix":null},{"ref":"AT1057","nom":"Lunité Lot de 4 haies en mousse pliables GES rangement","sport":"Athlétisme","prix":9.9},{"ref":"AT1058","nom":"Lunité bout pour les associer et en faire un tapis. Lunité","sport":"Athlétisme","prix":null},{"ref":"AT1","nom":"Lot de minis-haies EPS DIMA SPORT Lots de haies EPS DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"AT1156","nom":"Lot de 3 haies aluminium RETURN","sport":"Athlétisme","prix":null},{"ref":"AT160","nom":"Marteaux à lancer","sport":"Athlétisme","prix":36.25},{"ref":"AT162","nom":"Marteaux à lancer Soft Initiation","sport":"Athlétisme","prix":null},{"ref":"AT196","nom":"sadapter à tous les âges. Lunité","sport":"Athlétisme","prix":32.4},{"ref":"AT198","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"SC2072","nom":"Javelot Rocket","sport":"Athlétisme","prix":null},{"ref":"SC1014","nom":"POCKETEER POCKET ROCKET Javelot mousse LIGHTFOAM","sport":"Athlétisme","prix":7.5},{"ref":"U956","nom":"Odomètre Odomètre digital","sport":"Athlétisme","prix":135.5},{"ref":"D174","nom":"Rubans de mesure","sport":"Athlétisme","prix":null},{"ref":"D46","nom":"Lunité en 20 cm","sport":"Athlétisme","prix":14.3},{"ref":"D176","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"CR1028","nom":"Lot de 5 drapeaux","sport":"Athlétisme","prix":13.29},{"ref":"AT1064","nom":"Sautoir monobloc GES","sport":"Athlétisme","prix":null},{"ref":"A63","nom":"Sautoir monobloc DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"A62","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"AT1060","nom":"Sautoir juxtaposable GES","sport":"Athlétisme","prix":392.75},{"ref":"AT1073","nom":"Toutes nos housses sont confectionnées sans phtalates. Dessous antidérapant Saut","sport":"Athlétisme","prix":1419.0},{"ref":"AT1074","nom":"Lunité phtalates","sport":"Athlétisme","prix":null},{"ref":"AT307","nom":"de patins en caoutchouc protégeant le sol des salles. Montants en aluminium","sport":"Athlétisme","prix":null},{"ref":"D50","nom":"Élastique de saut Rouleau de sandow","sport":"Athlétisme","prix":null},{"ref":"U40BIS","nom":"Velcro aux 2 extrémités, se fixe et se démonte très rapidement, ne craint pas Ba","sport":"Athlétisme","prix":null},{"ref":"AT1121","nom":"PACK ÉCO Initiation Sauts","sport":"Athlétisme","prix":null},{"ref":"AT1122","nom":"PACK ÉCO Initiation Multi-Activités","sport":"Athlétisme","prix":null},{"ref":"GY0089","nom":"Lot de 5 tapis de gymnastique Essentials GES","sport":"Athlétisme","prix":null},{"ref":"GY0069","nom":"Tapis de gymnastique avec coins renforcés GES","sport":"Athlétisme","prix":null},{"ref":"G127","nom":"Tapis de gymnastique houssé DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"GY0090","nom":"Lot de 5 tapis de gymnastique Essentials GES","sport":"Athlétisme","prix":null},{"ref":"GY0039","nom":"sécuritaire et facile dentretien","sport":"Athlétisme","prix":490.0},{"ref":"GY0043","nom":"Chemin de gymnastique au bout Velcro DIMA SPORT Chemin de gymnastique Bicolor GE","sport":"Athlétisme","prix":null},{"ref":"G15","nom":"Chemin de gymnastique au bout Velcro DIMA SPORT Chemin de gymnastique Bicolor GE","sport":"Athlétisme","prix":null},{"ref":"GY16","nom":"Lunité Lunité","sport":"Athlétisme","prix":978.56},{"ref":"G09","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"GY0080","nom":"Aire dévolution GES","sport":"Athlétisme","prix":null},{"ref":"GY0024","nom":"Lunité Lunité","sport":"Athlétisme","prix":271.95},{"ref":"GY0029","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"GY0030","nom":"Lunité Lunité","sport":"Athlétisme","prix":825.95},{"ref":"GY1242","nom":"Piste gonflable de gym SARNEIGE","sport":"Athlétisme","prix":2279.0},{"ref":"GY0004","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"GY1183","nom":"Matelas gonflable","sport":"Athlétisme","prix":680.75},{"ref":"GY1181","nom":"Matelas de gymnastique Essential simple densité GES","sport":"Athlétisme","prix":null},{"ref":"GY0088","nom":"Matelas de gymnastique Essential simple densité GES","sport":"Athlétisme","prix":null},{"ref":"GY0012","nom":"Matelas de gymnastique GES repliable","sport":"Athlétisme","prix":229.75},{"ref":"G64","nom":"Matelas Dimagym DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"GY0015","nom":"Matelas de gymnastique double densité GES","sport":"Athlétisme","prix":641.0},{"ref":"GY0018","nom":"Matelas de gymnastique solidaire double densité GES","sport":"Athlétisme","prix":null},{"ref":"GY1061","nom":"côtés pour en faire un module rectangulaire. Deux Module mini rectangle GES","sport":"Athlétisme","prix":null},{"ref":"GY1063","nom":"Module mini tremplin GES Mini plan incliné GES Module mini dôme GES","sport":"Athlétisme","prix":107.0},{"ref":"GY1071","nom":"Module 1/2 cylindre GES Module cylindre séparable GES","sport":"Athlétisme","prix":null},{"ref":"GY1048","nom":"Plan incliné associatif 2 en 1 GES","sport":"Athlétisme","prix":327.0},{"ref":"GY1060","nom":"Module tremplin GES Module plan incliné GES Module trapèze GES","sport":"Athlétisme","prix":135.6},{"ref":"GY1059","nom":"Module dôme GES Module cylindre GES Module hexagone GES","sport":"Athlétisme","prix":null},{"ref":"GY1138","nom":"Poutre en mousse GES","sport":"Athlétisme","prix":null},{"ref":"GY1141","nom":"Module rectangle GES Module plan incliné avec plateforme GES","sport":"Athlétisme","prix":null},{"ref":"GY1140","nom":"Plinth en mousse GES Plinth en mousse GES","sport":"Athlétisme","prix":null},{"ref":"GY1057","nom":"Poutre en mousse GES Réalisé en mousse polyéther de densité 30 kg/m 3 ferme , re","sport":"Athlétisme","prix":null},{"ref":"GY1050","nom":"Module rectangle GES Module plan incliné avec plateforme GES","sport":"Athlétisme","prix":245.0},{"ref":"GY1056","nom":"Module rectangle GES Module plan incliné avec plateforme GES","sport":"Athlétisme","prix":245.0},{"ref":"GY1051","nom":"Lunité Lunité • Plinth 4 étages : dimensions 160 x 60 x 120 cm","sport":"Athlétisme","prix":null},{"ref":"GY1047","nom":"Module mousse composé de 3 parties obliques. 140 x 60 x 30 cm. 1 élément socle t","sport":"Athlétisme","prix":null},{"ref":"GY418","nom":"Barres asymétriques GYMNOVA","sport":"Athlétisme","prix":null},{"ref":"GY101","nom":"de barres m et m. Tapis de protection central inclus. Parfait pour","sport":"Athlétisme","prix":null},{"ref":"GY7","nom":"Barres asymétriques EPS DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"GY449","nom":"Les barres Lensemble","sport":"Athlétisme","prix":null},{"ref":"G499","nom":"Manchon pour barre asymétrique GES","sport":"Athlétisme","prix":45.0},{"ref":"GY1067","nom":"Manchon pour barre asymétrique GES","sport":"Athlétisme","prix":null},{"ref":"GY1114","nom":"Poutre en mousse confortable et stable GES Poutre éducative en mousse Gymnova id","sport":"Athlétisme","prix":null},{"ref":"GY1228","nom":"Poutre déquilibre basse NOUANSPORT Poutre basse de 5 mètres GYMNOVA","sport":"Athlétisme","prix":null},{"ref":"GY1278","nom":"Mini-trampoline à sandows GES Mini-trampoline à ressorts GES","sport":"Athlétisme","prix":null},{"ref":"GY1274","nom":"Toile pour mini-trampoline GES Protection mini-trampoline GES","sport":"Athlétisme","prix":null},{"ref":"GY1277","nom":"Ressort pour mini-trampoline GES Élastique de remplacement pour mini-trampoline","sport":"Athlétisme","prix":null},{"ref":"GY814","nom":"Baby trampoline EducGym","sport":"Athlétisme","prix":535.5},{"ref":"GY400","nom":"Mini-trampoline DIMA SPORT","sport":"Athlétisme","prix":null},{"ref":"GY13","nom":"Mini-trampoline DIMA SPORT","sport":"Athlétisme","prix":608.9},{"ref":"GY402","nom":"Lunité Lunité","sport":"Athlétisme","prix":null},{"ref":"GY3098","nom":"Piste délan GES","sport":"Athlétisme","prix":null},{"ref":"GY412","nom":"Tremplin Scolaire GYMNOVA Tremplin dentraînement GYMNOVA","sport":"Athlétisme","prix":null},{"ref":"GY443","nom":"Tremplin Double GYMNOVA Tremplin de gym en mousse GES","sport":"Athlétisme","prix":647.7},{"ref":"GY1068","nom":"Protection réalisée en mousse polyester, dune densité 24kg/m3, recouverte Bloc","sport":"Athlétisme","prix":null},{"ref":"GY1052","nom":"élément est solidarisé par bande Velcro sur les 2 côtés et peut être utilisé Lu","sport":"Athlétisme","prix":735.0},{"ref":"GY6050","nom":"standard GYMNOVA","sport":"Athlétisme","prix":null},{"ref":"D3411","nom":"Cerceau standard","sport":"Athlétisme","prix":3.5},{"ref":"SC197","nom":"Ballon de GR Entraînement TREMBLAY","sport":"Athlétisme","prix":13.25},{"ref":"G1115","nom":"FIG bi-matière","sport":"Athlétisme","prix":null},{"ref":"G1114","nom":"Massues de GR en matière plastique","sport":"Athlétisme","prix":null},{"ref":"JN164","nom":"Massues de GR en matière plastique","sport":"Athlétisme","prix":null},{"ref":"JN144","nom":"ECO Senior","sport":"Athlétisme","prix":null},{"ref":"JN47","nom":"Balle de rebond ECO 62 mm 60 g Balle de jonglage pour «le lancer» ou le «jeter».","sport":"Athlétisme","prix":6.5},{"ref":"JN02","nom":"Balle de rebond PRO 63 mm 160 g Balle de jonglage pour «le lancer» ou le «jeter»","sport":"Athlétisme","prix":null},{"ref":"AD14189","nom":"Balle de scène 70 mm 100 g Lunité","sport":"Athlétisme","prix":null},{"ref":"AD14190","nom":"MISTER BABACHE exceptionnelle, pour toute personne de débutant à confirmé","sport":"Athlétisme","prix":null},{"ref":"SC118","nom":"Aquabasket","sport":"Natation","prix":157.0},{"ref":"NA51","nom":"Mannequin de sauvetage Scolaire Mannequin de sauvetage Adulte 1,5 kg. Anneau au","sport":"Natation","prix":null},{"ref":"BA509","nom":"ÂGES OU CATÉGORIE Lycéens","sport":"Badminton","prix":null},{"ref":"BA520","nom":"ÂGE ET SOLLICITATION ÂGE ET SOLLICITATION","sport":"Badminton","prix":null},{"ref":"BA512","nom":"InitSCORE","sport":"Badminton","prix":4.99},{"ref":"BA507","nom":"ÂGES OU CATÉGORIE 10 - 14 ans 8 - 12 ans","sport":"Badminton","prix":10.45},{"ref":"BA522","nom":"POIDS 98 g 87 g","sport":"Badminton","prix":12.14},{"ref":"BA510","nom":"DURÉE DE VIE 8,5/10 DURÉE DE VIE 8,5/10","sport":"Badminton","prix":8.25},{"ref":"BA511","nom":"DURÉE DE VIE DURÉE DE VIE","sport":"Badminton","prix":null},{"ref":"BA516","nom":"DURÉE DE VIE 9/10 DURÉE DE VIE 9/10","sport":"Badminton","prix":11.75},{"ref":"BA2125","nom":"GRIP PU résistant","sport":"Badminton","prix":null},{"ref":"AB88108","nom":"ÂGE ET SOLLICITATION ÂGE ET SOLLICITATION","sport":"Badminton","prix":27.99},{"ref":"BA172","nom":"COLORIS JUPE Blanche Blanche","sport":"Badminton","prix":9.95},{"ref":"BA4014","nom":"NIVEAU DE RÉSISTANCE 6/10 7/10 8/10","sport":"Badminton","prix":15.98},{"ref":"AB72812","nom":"NIVEAU DE RÉSISTANCE 6/10 7/10 8/10","sport":"Badminton","prix":20.99},{"ref":"BA4031","nom":"NIVEAU DE RÉSISTANCE 8/10 8/10 8/10","sport":"Badminton","prix":11.45},{"ref":"BA4007","nom":"NIVEAU DE RÉSISTANCE 8/10 8/10 8/10","sport":"Badminton","prix":29.88},{"ref":"BA101","nom":"Porte-raquettes mural Pro CASAL SPORT","sport":"Badminton","prix":46.75},{"ref":"U121","nom":"Sac pour raquettes de badminton CASAL SPORT Grip rechange Pro CASAL SPORT","sport":"Badminton","prix":45.6},{"ref":"BA102","nom":"Boîte de 60 sur-grip pour raquette de badminton Cartons de numérotation de terra","sport":"Badminton","prix":null},{"ref":"TT315","nom":"NIVEAU DE JEU 3/10 NIVEAU DE JEU 5/10","sport":"Tennis de table","prix":null},{"ref":"TT335","nom":"POIDS 180 g","sport":"Tennis de table","prix":null},{"ref":"TT2860","nom":"NIVEAU DE JEU 3/10 NIVEAU DE JEU 7/10","sport":"Tennis de table","prix":null},{"ref":"TT430","nom":"Balles Training 40+ CASAL SPORT","sport":"Tennis de table","prix":30.9},{"ref":"TT366","nom":"Balles Club Training DUNLOP Balles Club Training DUNLOP","sport":"Tennis de table","prix":null},{"ref":"TT120","nom":"Balles Training JOOLA Balles Training JOOLA","sport":"Tennis de table","prix":null},{"ref":"TT129","nom":"NIVEAU DE JEU Initiation","sport":"Tennis de table","prix":49.9},{"ref":"TT108","nom":"DIAMÈTRE 40 mm","sport":"Tennis de table","prix":null},{"ref":"TT254","nom":"Chariot pour séparation de jeu","sport":"Tennis de table","prix":439.0},{"ref":"TT50","nom":"Poteaux/Filet CLIP","sport":"Tennis de table","prix":null},{"ref":"TT320","nom":"de linstallation. Poteaux CORNILLEAU","sport":"Tennis de table","prix":null},{"ref":"TT301","nom":"de linstallation. Poteaux CORNILLEAU","sport":"Tennis de table","prix":null},{"ref":"TT370","nom":"First et Sport 100 :","sport":"Tennis de table","prix":6.67},{"ref":"TT36","nom":"Filet Advance CORNILLEAU","sport":"Tennis de table","prix":null},{"ref":"TT5190","nom":"INFO + en place gérée par les","sport":"Tennis de table","prix":375.0},{"ref":"AB88016","nom":"DIMENSIONS PLIÉE / POIDS 165 x 155 x 75 cm / 73 kg","sport":"Tennis de table","prix":395.0},{"ref":"AB88018","nom":"DIMENSIONS PLIÉE / POIDS 165 x 155 x 75 cm / 87 kg","sport":"Tennis de table","prix":490.0},{"ref":"TT5070","nom":"DIMENSIONS PLIÉE / POIDS 165 x 155 x 75 cm / 91 kg","sport":"Tennis de table","prix":null},{"ref":"TT551","nom":"POTEAUX / FILET Escamotable","sport":"Tennis de table","prix":null},{"ref":"TT552","nom":"DIMENSIONS PLIÉE / POIDS 167 x 158 x 65 cm / 101 kg","sport":"Tennis de table","prix":null},{"ref":"D534","nom":"POTEAUX / FILET À pince - Clip Pro Donic","sport":"Tennis de table","prix":740.0},{"ref":"TT538","nom":"HANDISPORT Oui","sport":"Tennis de table","prix":null},{"ref":"D532","nom":"INFO + compacte/légère). Livrée","sport":"Tennis de table","prix":945.0},{"ref":"D635","nom":"INFO + Tables solides qui se rangent dans un petit local : 4 tables dans 115 cm","sport":"Tennis de table","prix":null},{"ref":"D537","nom":"INFO + dans un petit local : 4 tables","sport":"Tennis de table","prix":null},{"ref":"TT585","nom":"TABLE WORLD CUP 25-S ITTF","sport":"Tennis de table","prix":655.0},{"ref":"FI41","nom":"Step de fitness Eco classic","sport":"Fitness","prix":null},{"ref":"MU220","nom":"Step de fitness Classic Premium Step de fitness Classic Plus","sport":"Fitness","prix":null},{"ref":"MU210","nom":"Step de fitness Classic Expert Step de fitness extra long avec pieds SVELTUS","sport":"Fitness","prix":null},{"ref":"D367","nom":"Natte Gym mousse Eco 140","sport":"Fitness","prix":null},{"ref":"D369","nom":"Natte Dermo Confort SARNEIGE","sport":"Fitness","prix":null},{"ref":"FI1290","nom":"Natte medica confort avec oeillets SARNEIGE","sport":"Fitness","prix":28.2},{"ref":"SVE1371","nom":"Tapis Yoga Evolution SVELTUS","sport":"Fitness","prix":null},{"ref":"D1010","nom":"CASAL SPORT Porte nattes de gymnastique mobile CASAL SPORT","sport":"Fitness","prix":null},{"ref":"AD16600","nom":"Espalier simple 220 cm GES","sport":"Musculation","prix":null},{"ref":"AD16601","nom":"Espalier simple 250 cm GES Espalier double 250 cm GES","sport":"Musculation","prix":236.0},{"ref":"AD16604","nom":"Barre de traction composée dun cadre en acier de coloris gris foncé et dune","sport":"Musculation","prix":null},{"ref":"VE1159","nom":"Panneau daffichage sur roulettes","sport":"Aménagement","prix":null},{"ref":"D861","nom":"Cloison Mobile Facile à déplacer grâce à ses 4 roues pivotantes. 2 Roues avec fr","sport":"Aménagement","prix":null},{"ref":"U1311","nom":"Table de marque CASAL SPORT","sport":"Aménagement","prix":null},{"ref":"AD16598","nom":"Banc Suédois GES","sport":"Aménagement","prix":null},{"ref":"VE2034","nom":"Portemanteau mural aluminium avec bipatères","sport":"Aménagement","prix":null},{"ref":"VE2206","nom":"Portemanteau mural aluminium avec bipatères","sport":"Aménagement","prix":null},{"ref":"VE2204","nom":"Portemanteau mural avec bipatères","sport":"Aménagement","prix":88.75},{"ref":"VE2203","nom":"Lunité Lunité","sport":"Aménagement","prix":null},{"ref":"A486621","nom":"Armoire de bureau 90 cm MANUTAN EXPERT Armoire de bureau 185 cm MANUTAN EXPERT","sport":"Aménagement","prix":null},{"ref":"A106832","nom":"Armoire portes pliantes 90 cm MANUTAN EXPERT Modèle en acier, portes pliantes, 4","sport":"Aménagement","prix":null},{"ref":"MI1100","nom":"Trainer 120 Armoire portes coulissantes pleines EPS Max 190","sport":"Aménagement","prix":null},{"ref":"BB2087","nom":"Cercle Detroit GES","sport":"Aménagement","prix":null},{"ref":"B261","nom":"Cercle Las Vegas GES","sport":"Aménagement","prix":null},{"ref":"BB2089","nom":"Cercle San Antonio GES de 18 mm de section. Fixation du filet avec un jonc (livr","sport":"Aménagement","prix":null},{"ref":"BB2096","nom":"Paire de filets câble acier Filet anti-vandalisme","sport":"Aménagement","prix":90.0},{"ref":"B34","nom":"Filet tricolore Filet réglementaire 12 mailles en tresse Filet Club","sport":"Aménagement","prix":4.98},{"ref":"BB2265","nom":"Filet réglementaire 12 mailles en tresse de Filet de compétition de 12 mailles e","sport":"Aménagement","prix":null},{"ref":"BB2109","nom":"Filet réglementaire 12 mailles en tresse de Filet de compétition de 12 mailles e","sport":"Aménagement","prix":null},{"ref":"AD14196","nom":"Panneau Chicago GES","sport":"Outdoor","prix":222.0},{"ref":"BB2005","nom":"Panneau demi-lune en sandwich bois/fibre Panneau ½ lune GES Panneau rectangulair","sport":"Outdoor","prix":null},{"ref":"BB2008","nom":"Panneau compétition PLEXI GES","sport":"Outdoor","prix":null},{"ref":"B123","nom":"Panneau compétition PLEXI II GES Polyuréthane de haute densité. Protection ajust","sport":"Outdoor","prix":755.0},{"ref":"B8009","nom":"Panneau de compétition en méthacrylate transparent avec tracé blanc. Panneau Pro","sport":"Outdoor","prix":null},{"ref":"B0197","nom":"Treuil manuel","sport":"Outdoor","prix":null},{"ref":"F852","nom":"Mini but mobile de foot POWERSHOT But de foot MatchPro POWERSHOT","sport":"Football","prix":null},{"ref":"F867","nom":"But mobile Modulable Matchpro+ U6 à U9 POWERSHOT","sport":"Football","prix":null},{"ref":"H881","nom":"Paire de buts PrimHand mobile et filet","sport":"Handball","prix":1116.0},{"ref":"H8713","nom":"BICOLORE Blanc/rouge","sport":"Handball","prix":1624.0},{"ref":"MS100","nom":"But Mini-Stadium Foot - Hand - Hockey","sport":"Handball","prix":null},{"ref":"MS126","nom":"But mini stadium barreaudé","sport":"Handball","prix":null},{"ref":"H858","nom":"à 360°, patte dancrage amovible Système dancrage complet pour de 80 x 80 mm. C","sport":"Handball","prix":24.0},{"ref":"F306","nom":"Ballon Beach Soccer Classic CASAL SPORT","sport":"Sports collectifs","prix":null},{"ref":"FA3","nom":"Ballon School Junior CASAL SPORT Ballon Highschool Official CASAL SPORT","sport":"Football","prix":null},{"ref":"AB60751","nom":"Ballon foot US MVP WILSON Ballon NFL Duke Replica WILSON","sport":"Football","prix":null},{"ref":"SC808","nom":"INFO + pour une utilisation par les plus jeunes en initiation","sport":"Football","prix":6.99},{"ref":"SC8081","nom":"INFO + pour une utilisation par les plus jeunes en initiation","sport":"Football","prix":6.99},{"ref":"SC319","nom":"DIAMÈTRE 20 cm DIAMÈTRE 22 cm","sport":"Football","prix":6.64},{"ref":"SC349","nom":"DIAMÈTRE 22 cm DIAMÈTRE 20 cm","sport":"Football","prix":9.99},{"ref":"F854","nom":"Ballon de futsal 2.6 CASAL SPORT","sport":"Football","prix":13.5},{"ref":"AD14197","nom":"Ballon Tiro Pro ADIDAS Ballon Tiro Compétiton ADIDAS","sport":"Football","prix":83.33},{"ref":"H477","nom":"COMPOSITION 32 panneaux en mousse HD increvable","sport":"Handball","prix":null},{"ref":"SC347","nom":"INFO + utilisation en initiation par les plus jeunes pour le Baby-Hand 10","sport":"Handball","prix":null},{"ref":"AB35766","nom":"Ballon DB avec un double assemblage cousu/collé très / / /","sport":"Handball","prix":null},{"ref":"AB35734","nom":"INFO + Excellent toucher, avec ou sans résine. approuvé par lEHF","sport":"Handball","prix":null},{"ref":"B1438","nom":"INFO + Utilisation sur tous types de surfaces INFO + Ballon dentraînement","sport":"Handball","prix":20.5},{"ref":"B1440","nom":"INFO + Utilisation en club sur tous types de surfaces","sport":"Handball","prix":55.5},{"ref":"B1445","nom":"INFO + Ballon officiel de la LNB","sport":"Handball","prix":101.9},{"ref":"BB2291","nom":"INFO + et optimise la durabiité","sport":"Handball","prix":14.17},{"ref":"BB2283","nom":"INFO + Ballon homologué par la FIBA","sport":"Handball","prix":79.17},{"ref":"B3190","nom":"INFO + Utilisation conseillé pour tous les types de surfaces • Taille 7 : • Tail","sport":"Handball","prix":15.0},{"ref":"AB13683","nom":"INFO + Utilisation indoor/outdoor sur toutes les surfaces","sport":"Handball","prix":16.79},{"ref":"SC8041","nom":"TAILLE 4 à 5 selon gonglage TAILLE 4 à 5 selon gonglage","sport":"Handball","prix":8.22},{"ref":"VB316","nom":"CONCEPTION Gonflage avec valve butyle INFO + Ne fait pas mal aux mains et aux br","sport":"Handball","prix":null},{"ref":"VB164","nom":"INFO + Gros, léger et souple","sport":"Handball","prix":null},{"ref":"SC345","nom":"COMPOSITION Panneaux en mousse HD non gonflable et increvable COMPOSITION","sport":"Handball","prix":8.96},{"ref":"VB341","nom":"TAILLE Ballon ULTRA LIGHT (180-200 g) TAILLE Ballon ULTRA LIGHT (180-200 g)","sport":"Handball","prix":15.83},{"ref":"VB58","nom":"TAILLE Ballon SUPER LIGHT (200-220 g)","sport":"Handball","prix":23.31},{"ref":"VB65","nom":"TAILLE Ballon LIGHT (230-250 g)","sport":"Handball","prix":22.5},{"ref":"VB18","nom":"INFO + Ballon dentraînement INFO + Ballon de match","sport":"Handball","prix":null},{"ref":"VB38","nom":"INFO + Ballon de compétition INFO + Ballon de haute compétition officiel. Certif","sport":"Handball","prix":50.0},{"ref":"SC340","nom":"Ballon de rugby academy 2.6 CASAL SPORT initiation par les plus jeunes","sport":"Rugby","prix":null},{"ref":"SC318","nom":"CONCEPTION Non-gonflable","sport":"Rugby","prix":null},{"ref":"SC809","nom":"INFO + Ballon de rugby spécialement tiation. Revêtement soft pour une","sport":"Rugby","prix":8.45},{"ref":"AD04239","nom":"Ballon de rugby compétition 2.6 CASAL SPORT Lunité","sport":"Rugby","prix":null},{"ref":"AD04246","nom":"Ballon de rugby training 2.6 Fluo CASAL SPORT Ballon de rugby training 2.6 CASAL","sport":"Rugby","prix":20.83},{"ref":"RU22","nom":"Ballon GTR4000 GILBERT","sport":"Rugby","prix":null},{"ref":"RU5050","nom":"INFO + Un ballon de rugby parfait pour les clubs","sport":"Rugby","prix":null},{"ref":"RU240","nom":"CONCEPTION Cousu main avec vessie en latex naturel et valve Truflight","sport":"Rugby","prix":null},{"ref":"RU281","nom":"INFO + Ballon conforme aux recommandations du World Rugby INFO + Ballon conforme","sport":"Rugby","prix":null},{"ref":"AB89692","nom":"INFO + spécialement pour la haute compétition","sport":"Rugby","prix":154.0},{"ref":"D172","nom":"Pack scolaire initiation street hockey CASAL SPORT","sport":"Hockey","prix":null},{"ref":"HK128","nom":"Mini-but hockey FRANKLIN","sport":"Hockey","prix":null},{"ref":"HK03","nom":"Balle alvéolée mousse Spécial CASAL SPORT Palet mousse Soft Securité","sport":"Hockey","prix":null},{"ref":"D14U","nom":"Balle Securit Soft School CASAL SPORT Palet Soft Puck School CASAL SPORT","sport":"Hockey","prix":4.22},{"ref":"HK100","nom":"Balle Hard Puck Club CASAL SPORT Palet Hard Puck Club CASAL SPORT","sport":"Hockey","prix":3.58},{"ref":"D1131","nom":"Pack Eco Floorball Attack CASAL SPORT","sport":"Hockey","prix":null},{"ref":"D0134","nom":"Pack Fiber Unihockey UNIHOC Pack Pro Unihockey UNIHOC","sport":"Hockey","prix":184.75},{"ref":"D134U","nom":"Le pack Le pack","sport":"Hockey","prix":22.98},{"ref":"D0107U","nom":"Sac Xtra-Long 140 cm CASAL SPORT","sport":"Hockey","prix":3.7},{"ref":"HK50","nom":"Pack Eco Hockey Securit CASAL SPORT","sport":"Hockey","prix":null},{"ref":"SC256","nom":"Pack complet jeu de Lacrosse","sport":"Hockey","prix":null},{"ref":"SC711","nom":"Disque volant Standard pour les enfants en initiation. Plastique souple. Diamètr","sport":"Hockey","prix":null},{"ref":"SC2229","nom":"Disque volant Standard pour les enfants en initiation. Plastique souple. Diamètr","sport":"Hockey","prix":null},{"ref":"SC64","nom":"Disque volant FD165 CASAL SPORT","sport":"Hockey","prix":null},{"ref":"SC1039","nom":"Disque Volant Soft 100 CASAL SPORT Disque Squidgie AEROBIE","sport":"Hockey","prix":null},{"ref":"D1113","nom":"Mini-but Top Master pliable","sport":"Football","prix":null},{"ref":"D1117","nom":"structure en tube en aluminium très épais. Plier ou déplier en moins de 10","sport":"Football","prix":null},{"ref":"F926","nom":"résistante. Structure très solide rabattable grâce aux supports latéraux repliab","sport":"Football","prix":295.0},{"ref":"F927","nom":"Lunité • Lunité","sport":"Football","prix":null},{"ref":"H694","nom":"But de Mini Hand Quickfast CASAL SPORT","sport":"Handball","prix":null},{"ref":"H687","nom":"Paire de buts de Mini Hand Evolutiv CASAL SPORT","sport":"Handball","prix":null},{"ref":"D473","nom":"Haie dentraînement","sport":"Handball","prix":4.7},{"ref":"F334","nom":"Haie multi-fonctions avec socles lestés Pro Kit","sport":"Handball","prix":null},{"ref":"F4490","nom":"Haie multi-fonctions avec socles souples Securi Kit","sport":"Handball","prix":null},{"ref":"F3390","nom":"Haie multi-fonctions avec socles lestés Top Kit","sport":"Handball","prix":null},{"ref":"F567","nom":"plus agressifs","sport":"Handball","prix":null},{"ref":"D791","nom":"Lot mini-haies/cônes 18 cm Eco Lot mini-haies/cônes 35 cm Eco","sport":"Handball","prix":null},{"ref":"D792","nom":"Le lot Le lot","sport":"Handball","prix":33.6},{"ref":"D441","nom":"Lot mini-haies/cônes multifonctions 35 cm Pro Lot mini-haies/cônes multifonction","sport":"Handball","prix":null},{"ref":"SC506","nom":"Lot de 11 cônes marqués de 0 à 10 Lot de 50 minis cônes","sport":"Handball","prix":39.0},{"ref":"SC140","nom":"Cône de délimitation Eco","sport":"Handball","prix":2.4},{"ref":"D433","nom":"Cône à trous Eco","sport":"Handball","prix":3.92},{"ref":"F0011","nom":"Lot de plots Multi Marker Original","sport":"Handball","prix":null},{"ref":"F566","nom":"Le lot pour une utilisation intensive. Livré avec un support en plastique très r","sport":"Handball","prix":27.14},{"ref":"F787","nom":"Le lot Le lot","sport":"Handball","prix":null},{"ref":"F664","nom":"Lot de plots Multi Marker Evolutive","sport":"Handball","prix":14.02},{"ref":"U3123","nom":"Lot de 12 cerceaux extra-plats","sport":"Handball","prix":null},{"ref":"SC2124","nom":"Lot de 12 cerceaux plats","sport":"Handball","prix":null},{"ref":"D452","nom":"Le lot Cerceau plat en nylon très résistant et","sport":"Handball","prix":null},{"ref":"D453","nom":"Lunité 10","sport":"Handball","prix":null},{"ref":"D40","nom":"Lunité 10","sport":"Handball","prix":null},{"ref":"D33","nom":"Porte-Cerceaux Scratch","sport":"Handball","prix":5.18},{"ref":"SC656","nom":"Porte-Cerceaux Scratch","sport":"Handball","prix":null},{"ref":"F384","nom":"plat rond","sport":"Handball","prix":null},{"ref":"D355","nom":"Pied multifonctions","sport":"Handball","prix":null},{"ref":"U336","nom":"Lunité • Coloris : noir :","sport":"Handball","prix":12.49},{"ref":"BA111","nom":"Plot de fixation Lot de 10 lattes souples","sport":"Handball","prix":null},{"ref":"F897","nom":"Lot de 24 mini-disques de délimitation Lot de 24 disques de délimitation de coul","sport":"Handball","prix":44.0},{"ref":"U1006","nom":"Pack de 24 pièces marquage au sol + 2 mains bleues + 1 triangle rouge + 1 triang","sport":"Handball","prix":67.3},{"ref":"U1004","nom":"Pack de 48 pièces marquage au sol","sport":"Handball","prix":null},{"ref":"U814","nom":"Pompe à ballons Eco","sport":"Handball","prix":null},{"ref":"U1999","nom":"Sifflet poire à main Wizzball Ecological","sport":"Handball","prix":8.55},{"ref":"U0114","nom":"Sifflet plastique petit modèle Sifflet plastique grand modèle Sifflet métal Chro","sport":"Handball","prix":2.52},{"ref":"U54","nom":"Sifflet Fox Sifflet Fox Shark","sport":"Handball","prix":7.05},{"ref":"U4901","nom":"Lot de 2 cartons pour arbitre Lot de 3 cartons pour arbitre","sport":"Handball","prix":null},{"ref":"F613","nom":"Drapeau de touche Plaquettes en matière plastique. Chiffres de","sport":"Handball","prix":8.0},{"ref":"U1014","nom":"Lot de 25 feuilles TAKTIFOL","sport":"Handball","prix":null},{"ref":"U4292","nom":"Planchette de chronométrage","sport":"Handball","prix":null},{"ref":"U4295","nom":"Planchette de chronométrage avec rabat Pochette de rangement rigide multi-usages","sport":"Handball","prix":null},{"ref":"U1239","nom":"Contrôlé par quartz avec écran digital grand format. 4 comptages au 1/100e","sport":"Handball","prix":null},{"ref":"CR1020","nom":"Pro 2000 mémoires DIGISPORT","sport":"Handball","prix":299.0},{"ref":"U890","nom":"Pile bouton Lithium Permet de remplacer des piles de type LR44 et","sport":"Handball","prix":null},{"ref":"CR1014","nom":"ETANCHE/T° AIR Pluie/Non Projections/Non 30 mètres/Non","sport":"Handball","prix":8.08},{"ref":"CR1009","nom":"AVIS DE LEXPERT chronométrage indépendant de 2 athlètes","sport":"Handball","prix":20.86},{"ref":"CR1015","nom":"Valise de 20 chronomètres Top CASAL SPORT","sport":"Handball","prix":161.4},{"ref":"AB40266","nom":"AVIS DE LEXPERT Idéal pour la mesure après leffort Idéal pour une utilisation","sport":"Handball","prix":null},{"ref":"U8819","nom":"AVIS DE LEXPERT Le best-seller chez Polar À utiliser avec un smartphone ou PC I","sport":"Handball","prix":null},{"ref":"U9003","nom":"CASAL SPORT CASAL SPORT Bidon hygiénique avec couvercle","sport":"Handball","prix":3.06},{"ref":"U922","nom":"Porte-gourdes Pro CASAL SPORT Porte-gourdes Basic Expert CASAL SPORT Porte-gourd","sport":"Handball","prix":30.5},{"ref":"AT1162","nom":"Lot de dossards numérotés","sport":"Handball","prix":null},{"ref":"AT1165","nom":"Rubalise de délimitation en rouleau de 500 m, Lot de 1700 épingles pour dossards","sport":"Handball","prix":null},{"ref":"AD13334","nom":"résistant - pour le cross des collèges","sport":"Handball","prix":779.0},{"ref":"U8236","nom":"Trousse de premiers secours CASAL SPORT Trousse pour clubs et collectivités en n","sport":"Handball","prix":null},{"ref":"U1785","nom":"Compresse Réutilisable Froid/Chaud","sport":"Handball","prix":2.79},{"ref":"U8253","nom":"Bande Elast Tape","sport":"Handball","prix":8.94},{"ref":"U8254","nom":"élasticitée et une adhésivitée immédiate. Excellente tolérance : 100% coton. Lu","sport":"Handball","prix":null},{"ref":"U684","nom":"élasticitée et une adhésivitée immédiate. Excellente tolérance : 100% coton. Lu","sport":"Handball","prix":null},{"ref":"R374","nom":"Ruban tricolore Eco Ruban tricolore Prestige","sport":"Handball","prix":null},{"ref":"AD17497","nom":"Lot de 12 coupes argent et or 21 cm Lot de 12 coupes argent et or 30 cm","sport":"Handball","prix":null},{"ref":"AD17499","nom":"Lot de 30 coupes argent et or 30 cm Lot de 30 coupes argent et or 33 cm","sport":"Handball","prix":210.83},{"ref":"R144","nom":"Coupe économique 25 cm Coupe économique 31 cm","sport":"Handball","prix":null},{"ref":"AT235","nom":"Lot de 3 podiums CASAL SPORT","sport":"Handball","prix":null},{"ref":"EL0063","nom":"INFO + Puissant et complet Poids plus plume et poignée rétractable","sport":"Handball","prix":null},{"ref":"U677","nom":"Chariot casier métallique à ballons Chariot à ballons métallique","sport":"Handball","prix":210.0},{"ref":"U458","nom":"Panier-chariot métallique","sport":"Handball","prix":460.0},{"ref":"MI2128","nom":"Cage de rangement POWERSHOT","sport":"Handball","prix":null},{"ref":"U1853","nom":"Anneau de rangement pour chasubles Support mural pour chasubles","sport":"Handball","prix":null},{"ref":"U809","nom":"Lunité Lunité","sport":"Handball","prix":null},{"ref":"U1852","nom":"Porte jalons/bâtons mural Support mural cerceaux","sport":"Handball","prix":14.05},{"ref":"G186","nom":"jalons. Dimensions : Sac Xtra-Long 140 cm CASAL SPORT Sac XXtra-Long 200 cm CASA","sport":"Handball","prix":null},{"ref":"AT236","nom":"Chariot pour haies trainer","sport":"Handball","prix":null},{"ref":"G184","nom":"Chariot transport de tapis Eco Robuste, maniable, plateau en bois verni de 5 mm","sport":"Handball","prix":null},{"ref":"G1851","nom":"Chariot transport de tapis Ce chariot de transport a été étudié pour le transpor","sport":"Handball","prix":null},{"ref":"U10113","nom":"Sac maxi Ball bag noir CASAL SPORT","sport":"Handball","prix":37.2},{"ref":"U0066","nom":"Séchage rapide du contenu. Peut contenir 15 Sac Ball Bag CASAL SPORT Sac tube no","sport":"Handball","prix":null},{"ref":"U0078","nom":"Sac en bâche GES Sac Equipment Bag XL CASAL SPORT","sport":"Handball","prix":34.7},{"ref":"U122","nom":"Sac Equipment Bag XXL CASAL SPORT Sac de transport gros volume CASAL SPORT","sport":"Handball","prix":null},{"ref":"U361","nom":"Sac à roulettes en polyester très robuste 600 Strong Bag CASAL SPORT Massive Equ","sport":"Handball","prix":null},{"ref":"TP39","nom":"Casquette 5 panneaux Twill réglable SOLS Casquette 6 panneaux US Unie SOLS","sport":"Textile","prix":3.31},{"ref":"TP48","nom":"Casquette 5 panneaux Bicolore SOLS","sport":"Textile","prix":4.92},{"ref":"U1721","nom":"Sac teambag Eco Senior 2.0 S/M CASAL SPORT","sport":"Bagagerie","prix":null},{"ref":"U1725","nom":"Sac teambag Eco Senior 2.0 S/M CASAL SPORT","sport":"Bagagerie","prix":17.25},{"ref":"ADIHS9742","nom":"Sac Tiro Duffelbag Bottom Compartment M ADIDAS Sac Tiro Duffelbag Bottom Compart","sport":"Bagagerie","prix":null},{"ref":"U365","nom":"Sac Teambag à roulettes CASAL SPORT","sport":"Bagagerie","prix":27.5},{"ref":"E50","nom":"Mousqueton doigt droit CAMP Mousqueton à vis Orbit Bet Lock CAMP","sport":"Escalade","prix":null},{"ref":"E1181","nom":"Mousqueton HMS Atom Lock CAMP Mousqueton SMD SL PETZL","sport":"Escalade","prix":12.3},{"ref":"C170","nom":"Boussole Classic Evolution","sport":"Orientation","prix":null},{"ref":"C72","nom":"Modèle spécialement pour linitiation Boussole de pouce ORIENTSPORT","sport":"Orientation","prix":10.8},{"ref":"C36","nom":"Lot de 10 balises dorientation codées IHM cm","sport":"Orientation","prix":null},{"ref":"C37","nom":"Lunité • Modèle série B :","sport":"Orientation","prix":4.53},{"ref":"C152","nom":"balise là où vous voulez. Lavantage est que le fil Lot de 50 cartons de contrôl","sport":"Orientation","prix":null},{"ref":"C57","nom":"Étui à carte Il est amovible et universel (pour toutes les Paire de jumelles IHM","sport":"Orientation","prix":null},{"ref":"C116","nom":"Valise Découverte Course dOrientation","sport":"Orientation","prix":156.5},{"ref":"C151","nom":"Pack Éco Official Start Course dOrientation CASAL SPORT","sport":"Orientation","prix":null},{"ref":"AD16602","nom":"Espalier double GES","sport":"Gymnique","prix":null},{"ref":"GY551","nom":"Mini-socles EducGym Socles EducGym","sport":"Éveil / Motricité","prix":null},{"ref":"GY552","nom":"Lunité Lunité","sport":"Éveil / Motricité","prix":260.0},{"ref":"GY553","nom":"Lunité Lunité","sport":"Éveil / Motricité","prix":356.4},{"ref":"GY559","nom":"Ce banc permet linitiation à la poutre. Il peut Mini barre EducGym","sport":"Éveil / Motricité","prix":null},{"ref":"GY690","nom":"Lunité robuste avec équerres métalliques en renfort. mettre en place de multipl","sport":"Éveil / Motricité","prix":418.2},{"ref":"AB42999","nom":"Liaison pour modules en bois Educgym","sport":"Éveil / Motricité","prix":null},{"ref":"AC31599","nom":"Version foot à 8","sport":"Tennis","prix":null},{"ref":"AC31598","nom":"Version foot à 11 m","sport":"Tennis","prix":null}];
+
+// Sports et catégories uniques
+const SPORTS = [...new Set(CASAL.map(a=>a.sport))].sort();
+const CATS   = []; // catégories non disponibles dans ce catalogue
+
+// ══════════════════════════════════════════
+//  ÉTAT DE L'APPLICATION (LocalStorage)
+// ══════════════════════════════════════════
+let DB = {
+  inventaire: [],   // items
+  commande:   [],   // panier actuel
+  historique: [],   // commandes passées + événements
+};
+
+function save() { localStorage.setItem('eps_db', JSON.stringify(DB)); }
+function load() {
+  const d = localStorage.getItem('eps_db');
+  if (d) DB = JSON.parse(d);
+}
+load();
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('nav button')[['recap','ajout','recherche','commande','historique','reparation'].indexOf(page)].classList.add('active');
+  if (page === 'recap')      renderRecap();
+  if (page === 'commande')   renderCommande();
+  if (page === 'historique') renderHistorique();
+  if (page === 'reparation') renderReparation();
+  if (page === 'recherche')  initSearch();
+}
+
+function renderInvItem(item) {
+    var u = item.unites;
+    var n = u.length;
+    var c = u.filter(function(x){return x==='Correct';}).length;
+    var d = u.filter(function(x){return x==='Dégradé';}).length;
+    var i = u.filter(function(x){return x==='Inutilisable';}).length;
+    var p = function(v){return n ? Math.round(v/n*100) : 0;};
+    var casal = item.ref ? CASAL.find(function(a){return a.ref===item.ref;}) : null;
+    return '<div class="inv-item">'
+      + '<div class="inv-item-header">'
+      + '<div style="flex:1">'
+      + '<div class="inv-item-name">' + item.nom + '</div>'
+      + '<div class="inv-item-meta">'
+      + (item.sport ? '🏅 ' + item.sport + ' &nbsp;' : '')
+      + (item.ref   ? '📌 ' + item.ref   + ' &nbsp;' : '')
+      + (item.date  ? '📅 ' + item.date              : '')
+      + (casal && casal.prix ? ' · <span style="color:var(--vert)">' + casal.prix.toFixed(2) + ' €/u</span>' : '')
+      + '</div>'
+      + '<div style="margin-top:8px">'
+      + '<div class="progress-bar" style="margin-bottom:6px">'
+      + '<div class="pb-correct"    style="width:' + p(c) + '%"></div>'
+      + '<div class="pb-degrade"    style="width:' + p(d) + '%"></div>'
+      + '<div class="pb-inutilisable" style="width:' + p(i) + '%"></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;font-size:.75rem;flex-wrap:wrap">'
+      + '<span style="color:var(--vert)">✅ ' + c + ' Correct (' + p(c) + '%)</span>'
+      + '<span style="color:var(--jaune)">⚠️ ' + d + ' Dégradé (' + p(d) + '%)</span>'
+      + '<span style="color:var(--rouge)">❌ ' + i + ' Inutilisable (' + p(i) + '%)</span>'
+      + '</div></div>'
+      + (item.notes ? '<div style="margin-top:6px;font-size:.78rem;color:var(--gris-3)">' + item.notes + '</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'
+      + (item.images && item.images.length ? '<img class="inv-item-img" src="' + item.images[0] + '" alt="">' : '<div class="inv-item-img-placeholder">📦</div>')
+      + '<button class="btn btn-outline btn-sm" data-editid="' + item.id + '" onclick="editItem(this.dataset.editid)">✏️</button>'
+      + '<button class="btn btn-sm" style="background:#fde8e8;color:var(--rouge);border:none" data-delid="' + item.id + '" onclick="deleteItem(this.dataset.delid)">🗑</button>'
+      + '</div></div></div>';
+}
+
+// ══════════════════════════════════════════
+//  RÉCAPITULATIF
+// ══════════════════════════════════════════
+function renderRecap() {
+  const triSel = document.getElementById('recap-tri');
+  const tri = triSel ? triSel.value : 'ajout';
+  let inv = [...DB.inventaire];
+  if (tri === 'alpha') {
+    inv.sort((a,b) => a.nom.localeCompare(b.nom, 'fr'));
+  } else if (tri === 'sport') {
+    inv.sort((a,b) => (a.sport||'').localeCompare(b.sport||'', 'fr') || a.nom.localeCompare(b.nom,'fr'));
+  } else if (tri === 'correct') {
+    inv.sort((a,b) => {
+      const pct = x => { const n=x.unites.length; return n ? x.unites.filter(u=>u==='Correct').length/n : 0; };
+      return pct(b) - pct(a);
+    });
+  } else if (tri === 'degrade') {
+    inv.sort((a,b) => {
+      const pct = x => { const n=x.unites.length; return n ? x.unites.filter(u=>u==='Dégradé').length/n : 0; };
+      return pct(b) - pct(a);
+    });
+  } else if (tri === 'inutilisable') {
+    inv.sort((a,b) => {
+      const pct = x => { const n=x.unites.length; return n ? x.unites.filter(u=>u==='Inutilisable').length/n : 0; };
+      return pct(b) - pct(a);
+    });
+  }
+  // Totaux
+  let totC=0,totD=0,totI=0,totQty=0;
+  inv.forEach(item => {
+    item.unites.forEach(u => {
+      totQty++;
+      if (u==='Correct') totC++;
+      else if (u==='Dégradé') totD++;
+      else totI++;
+    });
+  });
+
+  document.getElementById('recap-cards').innerHTML = `
+    <div class="card"><div class="card-value">${inv.length}</div><div class="card-label">Articles différents</div></div>
+    <div class="card"><div class="card-value">${totQty}</div><div class="card-label">Unités totales</div></div>
+    <div class="card"><div class="card-value" style="color:var(--vert)">${totC}</div><div class="card-label">✅ Correctes</div></div>
+    <div class="card"><div class="card-value" style="color:var(--jaune)">${totD}</div><div class="card-label">⚠️ Dégradées</div></div>
+    <div class="card"><div class="card-value" style="color:var(--rouge)">${totI}</div><div class="card-label">❌ Inutilisables</div></div>
+  `;
+
+  const pct = v => totQty ? Math.round(v/totQty*100) : 0;
+  document.getElementById('recap-global-bar').innerHTML =
+    `<div class="progress-bar">
+      <div class="pb-correct"   style="width:${pct(totC)}%"></div>
+      <div class="pb-degrade"   style="width:${pct(totD)}%"></div>
+      <div class="pb-inutilisable" style="width:${pct(totI)}%"></div>
+    </div>`;
+  document.getElementById('recap-global-legend').innerHTML =
+    `<span style="color:var(--vert)">✅ Correct ${pct(totC)}%</span>
+     <span style="color:var(--jaune)">⚠️ Dégradé ${pct(totD)}%</span>
+     <span style="color:var(--rouge)">❌ Inutilisable ${pct(totI)}%</span>`;
+
+  if (inv.length === 0) {
+    document.getElementById('recap-list').innerHTML =
+      `<div class="empty-state"><div class="ico">📦</div>Aucun matériel enregistré</div>`;
+    return;
+  }
+
+  // Groupement par sport/famille si tri=sport
+  var recapHtml = '';
+  if (tri === 'sport') {
+    var groups = {};
+    inv.forEach(function(item) {
+      var key = item.sport || 'Sans catégorie';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    });
+    Object.keys(groups).sort(function(a,b){return a.localeCompare(b,'fr');}).forEach(function(sport) {
+      var g = groups[sport];
+      var gC=0,gD=0,gI=0;
+      g.forEach(function(it){it.unites.forEach(function(u){if(u==='Correct')gC++;else if(u==='Dégradé')gD++;else gI++;});});
+      var gTot=gC+gD+gI||1;
+      recapHtml += '<div style="margin:18px 0 6px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--vert);border-radius:8px;color:#fff;font-weight:700;font-size:.88rem;gap:10px;flex-wrap:wrap">'
+        + '<span>🏅 ' + sport + ' <span style="font-size:.75rem;font-weight:400;opacity:.7">(' + g.length + ' article' + (g.length>1?'s':'') + ')</span></span>'
+        + '<span style="font-size:.75rem;font-weight:600;opacity:.9">✅' + Math.round(gC/gTot*100) + '% ⚠️' + Math.round(gD/gTot*100) + '% ❌' + Math.round(gI/gTot*100) + '%</span>'
+        + '</div></div>';
+      g.forEach(function(item){ recapHtml += renderInvItem(item); });
+    });
+  } else {
+    inv.forEach(function(item){ recapHtml += renderInvItem(item); });
+  }
+  document.getElementById('recap-list').innerHTML = recapHtml;
+}
+
+// ══════════════════════════════════════════
+//  AJOUT MATÉRIEL
+// ══════════════════════════════════════════
+let editId = null;
+let pendingImages = [];
+
+const ETATS = [
+  { val:'Correct',      ico:'✅', cls:'etat-correct' },
+  { val:'Dégradé',      ico:'⚠️', cls:'etat-degrade' },
+  { val:'Inutilisable', ico:'❌', cls:'etat-inutilisable' },
+];
+
+function buildQtyStates() {
+  const qty = parseInt(document.getElementById('f-qty').value) || 1;
+  const global = document.getElementById('f-etat-global').value;
+  const wrap = document.getElementById('qty-states-wrap');
+  const div  = document.getElementById('qty-states');
+  if (global) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  // Conserver les états existants
+  const prev = Array.from(div.querySelectorAll('.qty-state-btn')).map(b => b.dataset.val);
+  div.innerHTML = Array.from({length:qty}, (_,i) => {
+    const val = prev[i] || 'Correct';
+    const e = ETATS.find(x=>x.val===val);
+    return `<button type="button" class="qty-state-btn ${e.cls}" data-idx="${i}" data-val="${val}" onclick="cycleEtat(this)">
+      <span>${e.ico} ${val}</span>
+      <span class="unit-num">Unité ${i+1}</span>
+    </button>`;
+  }).join('');
+}
+
+function cycleEtat(btn) {
+  const cur = ETATS.findIndex(x=>x.val===btn.dataset.val);
+  const next = ETATS[(cur+1) % ETATS.length];
+  btn.dataset.val = next.val;
+  btn.className = 'qty-state-btn ' + next.cls;
+  btn.querySelector('span:first-child').textContent = next.ico + ' ' + next.val;
+}
+
+function previewImages(inp) {
+  const preview = document.getElementById('img-preview');
+  preview.innerHTML = '';
+  pendingImages = [];
+  Array.from(inp.files).forEach(f => {
+    const r = new FileReader();
+    r.onload = e => {
+      pendingImages.push(e.target.result);
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      preview.appendChild(img);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function saveItem() {
+  const nom = document.getElementById('f-nom').value.trim();
+  if (!nom) { toast('⚠️ Le nom est obligatoire.'); return; }
+  const qty    = parseInt(document.getElementById('f-qty').value) || 1;
+  const global = document.getElementById('f-etat-global').value;
+  let unites = [];
+  if (global) {
+    unites = Array(qty).fill(global);
+  } else {
+    for (let i=0; i<qty; i++) {
+      const btn = document.querySelector(`.qty-state-btn[data-idx="${i}"]`);
+      unites.push(btn ? btn.dataset.val : 'Correct');
+    }
+  }
+  const item = {
+    id: editId || Date.now().toString(),
+    nom,
+    qty,
+    unites,
+    ref:    document.getElementById('f-ref').value.trim(),
+    sport:  document.getElementById('f-sport').value.trim(),
+    date:   document.getElementById('f-date').value,
+    notes:  document.getElementById('f-notes').value.trim(),
+    images: pendingImages.slice(),
+  };
+  if (editId) {
+    const idx = DB.inventaire.findIndex(x=>x.id===editId);
+    DB.inventaire[idx] = item;
+    toast('✅ Matériel mis à jour.');
+    editId = null;
+  } else {
+    DB.inventaire.push(item);
+    DB.historique.unshift({ type:'ajout', date: new Date().toLocaleDateString('fr'), item: item.nom, qty });
+    toast('✅ Matériel enregistré !');
+  }
+  save();
+  clearForm();
+}
+
+function clearForm() {
+  ['f-nom','f-ref','f-sport','f-notes'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('f-qty').value = 1;
+  document.getElementById('f-etat-global').value = '';
+  document.getElementById('f-date').value = '';
+  document.getElementById('qty-states').innerHTML = '';
+  document.getElementById('qty-states-wrap').style.display = 'block';
+  document.getElementById('img-preview').innerHTML = '';
+  pendingImages = [];
+  editId = null;
+  buildQtyStates();
+}
+
+function editItem(id) {
+  const item = DB.inventaire.find(x=>x.id===id);
+  if (!item) return;
+  editId = id;
+  nav('ajout');
+  setTimeout(() => {
+    document.getElementById('f-nom').value   = item.nom;
+    document.getElementById('f-qty').value   = item.qty;
+    document.getElementById('f-ref').value   = item.ref || '';
+    document.getElementById('f-sport').value = item.sport || '';
+    document.getElementById('f-date').value  = item.date || '';
+    document.getElementById('f-notes').value = item.notes || '';
+    const allSame = item.unites.every(u=>u===item.unites[0]);
+    if (allSame) {
+      document.getElementById('f-etat-global').value = item.unites[0];
+    } else {
+      document.getElementById('f-etat-global').value = '';
+      buildQtyStates();
+      // Override with saved states
+      item.unites.forEach((u,i) => {
+        const btn = document.querySelector(`.qty-state-btn[data-idx="${i}"]`);
+        if (!btn) return;
+        const e = ETATS.find(x=>x.val===u);
+        if (!e) return;
+        btn.dataset.val = e.val;
+        btn.className = 'qty-state-btn ' + e.cls;
+        btn.querySelector('span:first-child').textContent = e.ico + ' ' + e.val;
+      });
+    }
+    pendingImages = item.images || [];
+    const prev = document.getElementById('img-preview');
+    prev.innerHTML = pendingImages.map(s=>`<img src="${s}" alt="">`).join('');
+  }, 50);
+}
+
+function deleteItem(id) {
+  if (!confirm('Supprimer cet article de l\'inventaire ?')) return;
+  DB.inventaire = DB.inventaire.filter(x=>x.id!==id);
+  DB.historique.unshift({ type:'suppression', date: new Date().toLocaleDateString('fr'), item: id });
+  save();
+  renderRecap();
+  toast('🗑 Article supprimé.');
+}
+
+// ══════════════════════════════════════════
+//  RECHERCHE
+// ══════════════════════════════════════════
+function initSearch() {
+  var ss = document.getElementById('src-sport');
+  var ms = document.getElementById('modal-sport');
+  if (ss && ss.options.length <= 1) {
+    SPORTS.forEach(function(sp) { ss.add(new Option(sp,sp)); });
+  }
+  if (ms && ms.options.length <= 1) {
+    SPORTS.forEach(function(sp) { ms.add(new Option(sp,sp)); });
+  }
+  searchCasal();
+}
+
+function searchCasal() {
+  var srcQ  = document.getElementById('src-q');
+  var srcSp = document.getElementById('src-sport');
+  var q  = srcQ  ? srcQ.value.toLowerCase()  : '';
+  var sp = srcSp ? srcSp.value : '';
+  var res = CASAL.filter(function(a) {
+    var matchQ = !q || a.nom.toLowerCase().indexOf(q) >= 0
+                    || a.ref.toLowerCase().indexOf(q) >= 0
+                    || a.sport.toLowerCase().indexOf(q) >= 0;
+    var matchSp = !sp || a.sport === sp;
+    return matchQ && matchSp;
+  });
+  renderCasalResults('casal-results', res, 'search');
+}
+
+function searchInventaire() {
+  const q = document.getElementById('inv-q').value.toLowerCase();
+  const res = DB.inventaire.filter(i =>
+    i.nom.toLowerCase().includes(q) ||
+    (i.sport||'').toLowerCase().includes(q) ||
+    (i.ref||'').toLowerCase().includes(q)
+  );
+  const div = document.getElementById('inv-results');
+  if (!res.length) { div.innerHTML = '<div class="empty-state"><div class="ico">🔍</div>Aucun résultat</div>'; return; }
+  div.innerHTML = res.map(item => {
+    const c = item.unites.filter(x=>x==='Correct').length;
+    const d = item.unites.filter(x=>x==='Dégradé').length;
+    const ii= item.unites.filter(x=>x==='Inutilisable').length;
+    return `<div class="casal-result">
+      <div class="casal-result-info">
+        <div class="casal-result-name">${item.nom}</div>
+        <div class="casal-result-meta">${item.sport||''} · ${item.qty} unités · ✅${c} ⚠️${d} ❌${ii}</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="editItem('${item.id}');nav('ajout')">✏️ Modifier</button>
+    </div>`;
+  }).join('');
+}
+
+function switchSearchTab(tab, btn) {
+  document.getElementById('stab-casal').style.display = tab==='casal' ? '' : 'none';
+  document.getElementById('stab-inventaire').style.display = tab==='inventaire' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab==='inventaire') searchInventaire();
+}
+
+function renderCasalResults(containerId, items, context) {
+  var div = document.getElementById(containerId);
+  if (!div) return;
+  if (!items.length) {
+    div.innerHTML = '<div class="empty-state"><div class="ico">🔍</div>Aucun article trouvé</div>';
+    return;
+  }
+  div.innerHTML = items.slice(0,40).map(function(a) {
+    var prixHtml = a.prix != null ? '<div class="casal-price">' + a.prix.toFixed(2) + ' \u20ac</div>' : '';
+    var ref = a.ref;
+    var btns = '';
+    if (context === 'search') {
+      btns = '<button class="btn btn-primary btn-sm" data-ref="' + ref + '" onclick="addCasalToInventory(this.dataset.ref)">+ Inventaire</button>'
+           + '<button class="btn btn-outline btn-sm" data-ref="' + ref + '" onclick="addCasalToOrder(this.dataset.ref);closeModal(\'modal-casal\')">🛒 Commander</button>';
+    } else if (context === 'ajout') {
+      btns = '<button class="btn btn-primary btn-sm" data-ref="' + ref + '" onclick="prefillFromCasal(this.dataset.ref);closeModal(\'modal-casal\')">✅ Utiliser</button>';
+    } else {
+      btns = '<button class="btn btn-primary btn-sm" data-ref="' + ref + '" onclick="addCasalToOrder(this.dataset.ref);closeModal(\'modal-casal\')">Ajouter</button>';
+    }
+    return '<div class="casal-result">'
+      + '<div class="casal-result-info">'
+      + '<div class="casal-result-name">' + a.nom + '</div>'
+      + '<div class="casal-result-meta">📌 ' + a.ref + ' &nbsp;·&nbsp; ' + a.sport + '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">'
+      + prixHtml + btns
+      + '</div></div>';
+  }).join('');
+}
+
+
+
+// ══════════════════════════════════════════
+//  COMMANDE
+// ══════════════════════════════════════════
+function initCommandePage() {
+  // Auto-ajouter les inutilisables pas encore en commande
+  DB.inventaire.forEach(item => {
+    const iI = item.unites.filter(x=>x==='Inutilisable').length;
+    if (iI > 0) {
+      const existing = DB.commande.find(c => c.itemId === item.id);
+      if (!existing) {
+        DB.commande.push({
+          id: Date.now()+'_'+item.id,
+          itemId: item.id,
+          nom: item.nom,
+          ref: item.ref||null,
+          qty: iI,
+          prix: item.ref ? (CASAL.find(a=>a.ref===item.ref)||{}).prix || null : null,
+          type: 'inventaire',
+        });
+      }
+    }
+  });
+  save();
+}
+
+function renderCommande() {
+  initCommandePage();
+  const list = document.getElementById('commande-list');
+  if (!DB.commande.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ico">🛒</div>Aucun article dans la commande.<br>Ajoutez du matériel inutilisable ou depuis le catalogue.</div>';
+    document.getElementById('commande-total').style.display='none';
+    return;
+  }
+  let total = 0; let hasPrice = false;
+  list.innerHTML = DB.commande.map(c => {
+    const p = c.prix ? c.prix * c.qty : null;
+    if (p) { total += p; hasPrice = true; }
+    return `
+    <div class="cmd-item">
+      <div style="flex:1">
+        <div class="cmd-item-name">${c.nom}</div>
+        <div class="cmd-item-meta">${c.ref ? '📌 '+c.ref : ''}${c.prix ? ` · ${c.prix.toFixed(2)} €/u` : ''}</div>
+      </div>
+      <div class="qty-ctrl">
+        <button onclick="cmdQty('${c.id}',-1)">−</button>
+        <span>${c.qty}</span>
+        <button onclick="cmdQty('${c.id}',1)">+</button>
+      </div>
+      ${c.prix ? `<div style="font-weight:700;color:var(--vert);min-width:70px;text-align:right">${(c.prix*c.qty).toFixed(2)} €</div>` : '<div style="min-width:70px"></div>'}
+      <button class="btn btn-sm" style="background:#fde8e8;color:var(--rouge);border:none" onclick="removeFromOrder('${c.id}')">🗑</button>
+    </div>`;
+  }).join('');
+  if (hasPrice) {
+    document.getElementById('commande-total').style.display='block';
+    document.getElementById('commande-total-val').textContent = total.toFixed(2)+' €';
+  } else {
+    document.getElementById('commande-total').style.display='none';
+  }
+}
+
+function cmdQty(id, delta) {
+  const c = DB.commande.find(x=>x.id===id);
+  if (!c) return;
+  c.qty = Math.max(1, c.qty + delta);
+  save(); renderCommande();
+}
+function removeFromOrder(id) {
+  DB.commande = DB.commande.filter(x=>x.id!==id);
+  save(); renderCommande();
+}
+
+function addCasalToOrder(ref) {
+  const a = CASAL.find(x=>x.ref===ref);
+  if (!a) return;
+  const existing = DB.commande.find(c=>c.ref===ref);
+  if (existing) { existing.qty++; } else {
+    DB.commande.push({ id: Date.now().toString(), nom: a.nom, ref: a.ref, qty:1, prix: a.prix, type:'casal' });
+  }
+  save(); renderCommande(); toast('🛒 Ajouté à la commande.');
+}
+
+function addCasalToInventory(ref) {
+  const a = CASAL.find(x=>x.ref===ref);
+  if (!a) return;
+  nav('ajout');
+  setTimeout(() => {
+    document.getElementById('f-nom').value   = a.nom;
+    document.getElementById('f-ref').value   = a.ref;
+    document.getElementById('f-sport').value = a.sport;
+    buildQtyStates();
+    toast('📝 Données pré-remplies depuis le catalogue.');
+  }, 50);
+}
+
+function prefillFromCasal(ref) {
+  const a = CASAL.find(x=>x.ref===ref);
+  if (!a) return;
+  document.getElementById('f-nom').value   = a.nom;
+  document.getElementById('f-ref').value   = a.ref;
+  document.getElementById('f-sport').value = a.sport;
+  buildQtyStates();
+  toast('📝 Référence Casal appliquée : ' + a.ref);
+}
+
+function passerCommande() {
+  if (!DB.commande.length) { toast('⚠️ Panier vide.'); return; }
+  if (!confirm('Passer la commande ? Elle apparaîtra dans l\'historique.')) return;
+  DB.historique.unshift({
+    type: 'commande',
+    id:   Date.now().toString(),
+    date: new Date().toLocaleDateString('fr'),
+    articles: JSON.parse(JSON.stringify(DB.commande)),
+    statut: 'en-cours',
+  });
+  DB.commande = [];
+  save(); renderCommande(); renderHistorique(); nav('historique');
+  toast('✅ Commande passée !');
+}
+
+function openFreeModal() {
+  document.getElementById('modal-libre').classList.add('open');
+}
+function addFreeToOrder() {
+  const nom = document.getElementById('fl-nom').value.trim();
+  if (!nom) { toast('⚠️ Nom requis.'); return; }
+  const qty = parseInt(document.getElementById('fl-qty').value)||1;
+  const prix= parseFloat(document.getElementById('fl-prix').value)||null;
+  DB.commande.push({ id: Date.now().toString(), nom, qty, prix, type:'libre' });
+  save(); closeModal('modal-libre'); renderCommande();
+  toast('➕ Article ajouté.');
+}
+
+// ══════════════════════════════════════════
+//  HISTORIQUE
+// ══════════════════════════════════════════
+function renderHistorique() {
+  const div = document.getElementById('historique-list');
+  if (!DB.historique.length) {
+    div.innerHTML = '<div class="empty-state"><div class="ico">📋</div>Aucun historique</div>'; return;
+  }
+  div.innerHTML = DB.historique.map(h => {
+    if (h.type==='commande') {
+      const total = h.articles.reduce((s,c)=>(c.prix?s+c.prix*c.qty:s),0);
+      return `
+      <div class="hist-item">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+          <div>
+            <div style="font-weight:700">🛒 Commande du ${h.date}</div>
+            <div style="font-size:.78rem;color:var(--gris-3)">${h.articles.length} article(s) · ${total?total.toFixed(2)+' € ind.':''}</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="hist-status ${h.statut==='en-cours'?'hist-en-cours':'hist-arrivee'}">
+              ${h.statut==='en-cours'?'⏳ En cours':'✅ Arrivée'}
+            </span>
+            ${h.statut==='en-cours' ? `<button class="btn btn-primary btn-sm" onclick="marquerArrivee('${h.id}')">Marquer arrivée</button>` : ''}
+          </div>
+        </div>
+        <div style="font-size:.8rem">
+          ${h.articles.map(c=>`<div style="padding:3px 0;border-bottom:1px solid var(--gris-1)">
+            ${c.nom} × ${c.qty}${c.prix?` — ${(c.prix*c.qty).toFixed(2)} €`:''}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }
+    if (h.type==='ajout') return `
+      <div class="hist-item" style="font-size:.88rem">
+        ➕ <strong>${h.date}</strong> — Ajout : ${h.item} (${h.qty} unité(s))
+      </div>`;
+    if (h.type==='reparation') return `
+      <div class="hist-item" style="font-size:.88rem">
+        🔧 <strong>${h.date}</strong> — Réparation : ${h.item} (${h.qty} unité(s) remises en état)
+      </div>`;
+    if (h.type==='arrivee') return `
+      <div class="hist-item" style="font-size:.88rem">
+        📦 <strong>${h.date}</strong> — Arrivée commande — ${h.detail}
+      </div>`;
+    return `<div class="hist-item" style="font-size:.88rem">📌 ${h.date} — ${h.type}</div>`;
+  }).join('');
+}
+
+function marquerArrivee(hid) {
+  const hItem = DB.historique.find(x=>x.id===hid);
+  if (!hItem) return;
+  hItem.statut = 'arrivee';
+  // Mettre à jour l'inventaire : remplacer les inutilisables par Correct
+  hItem.articles.forEach(c => {
+    if (!c.itemId) return;
+    const inv = DB.inventaire.find(x=>x.id===c.itemId);
+    if (!inv) return;
+    let replaced = 0;
+    for (let i=0; i<inv.unites.length && replaced<c.qty; i++) {
+      if (inv.unites[i]==='Inutilisable') { inv.unites[i]='Correct'; replaced++; }
+    }
+  });
+  DB.historique.unshift({ type:'arrivee', date: new Date().toLocaleDateString('fr'), detail: hItem.articles.map(a=>a.nom).join(', ') });
+  save(); renderHistorique(); toast('📦 Inventaire mis à jour !');
+}
+
+// ══════════════════════════════════════════
+//  RÉPARATION
+// ══════════════════════════════════════════
+function renderReparation() {
+  const filtre = document.getElementById('rep-filtre').value;
+  const tri    = document.getElementById('rep-tri').value;
+
+  let items = DB.inventaire.filter(item => {
+    const hasD = item.unites.includes('Dégradé');
+    const hasI = item.unites.includes('Inutilisable');
+    if (filtre==='Inutilisable') return hasI;
+    if (filtre==='Dégradé')     return hasD;
+    return hasD || hasI;
+  });
+
+  if (tri==='nom') items.sort((a,b)=>a.nom.localeCompare(b.nom));
+  else if (tri==='qty') items.sort((a,b)=>{
+    const qa = a.unites.filter(x=>x!=='Correct').length;
+    const qb = b.unites.filter(x=>x!=='Correct').length;
+    return qb-qa;
+  });
+  else { // priorité : inutilisable > dégradé
+    items.sort((a,b)=>{
+      const ia = a.unites.filter(x=>x==='Inutilisable').length;
+      const ib = b.unites.filter(x=>x==='Inutilisable').length;
+      return ib - ia;
+    });
+  }
+
+  const div = document.getElementById('reparation-list');
+  if (!items.length) {
+    div.innerHTML = '<div class="empty-state"><div class="ico">🔧</div>Aucun matériel à réparer.</div>'; return;
+  }
+
+  div.innerHTML = items.map(item => {
+    const iI = item.unites.filter(x=>x==='Inutilisable').length;
+    const iD = item.unites.filter(x=>x==='Dégradé').length;
+    const prio = iI > 0 ? 'priorite-haute' : 'priorite-basse';
+    return `
+    <div class="rep-item ${prio}">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.93rem">${item.nom}</div>
+        <div style="font-size:.78rem;color:var(--gris-3);margin-top:2px">
+          ${iI ? `<span style="color:var(--rouge)">❌ ${iI} inutilisable(s)</span>` : ''}
+          ${iD ? `<span style="color:var(--jaune)"> ⚠️ ${iD} dégradé(s)</span>` : ''}
+        </div>
+      </div>
+      ${iD ? `<div>
+        <label style="font-size:.75rem;color:var(--gris-3)">Réparer dégradés</label>
+        <input type="number" min="1" max="${iD}" value="${iD}" id="rep-d-${item.id}" style="width:52px;padding:4px 6px;font-size:.83rem;margin-left:6px">
+        <button class="btn btn-outline btn-sm" onclick="reparer('${item.id}','Dégradé')">✅ Réparé</button>
+      </div>` : ''}
+      ${iI ? `<div>
+        <label style="font-size:.75rem;color:var(--gris-3)">Réparer inutilisables</label>
+        <input type="number" min="1" max="${iI}" value="${iI}" id="rep-i-${item.id}" style="width:52px;padding:4px 6px;font-size:.83rem;margin-left:6px">
+        <button class="btn btn-outline btn-sm" onclick="reparer('${item.id}','Inutilisable')">✅ Réparé</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function reparer(itemId, etat) {
+  const item = DB.inventaire.find(x=>x.id===itemId);
+  if (!item) return;
+  const inpId = etat==='Dégradé' ? 'rep-d-'+itemId : 'rep-i-'+itemId;
+  const qty = parseInt(document.getElementById(inpId)?.value) || 1;
+  let done = 0;
+  for (let i=0; i<item.unites.length && done<qty; i++) {
+    if (item.unites[i]===etat) { item.unites[i]='Correct'; done++; }
+  }
+  DB.historique.unshift({ type:'reparation', date: new Date().toLocaleDateString('fr'), item: item.nom, qty: done });
+  save(); renderReparation(); toast(`🔧 ${done} unité(s) remise(s) en état !`);
+}
+
+// ══════════════════════════════════════════
+//  MODAL CASAL
+// ══════════════════════════════════════════
+let casalCtx = 'commande';
+function openCasalModal(ctx) {
+  casalCtx = ctx;
+  document.getElementById('modal-casal').classList.add('open');
+  var ms = document.getElementById('modal-sport');
+  if (ms && ms.options.length <= 1) {
+    SPORTS.forEach(function(sp) { ms.add(new Option(sp, sp)); });
+  }
+  modalSearch();
+}
+function modalSearch() {
+  var mQ  = document.getElementById('modal-q');
+  var mSp = document.getElementById('modal-sport');
+  var q  = mQ  ? mQ.value.toLowerCase()  : '';
+  var sp = mSp ? mSp.value : '';
+  var res = CASAL.filter(function(a) {
+    var matchQ = !q || a.nom.toLowerCase().indexOf(q) >= 0
+                    || a.ref.toLowerCase().indexOf(q) >= 0
+                    || a.sport.toLowerCase().indexOf(q) >= 0;
+    var matchSp = !sp || a.sport === sp;
+    return matchQ && matchSp;
+  });
+  renderCasalResults('modal-results', res, casalCtx);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Fermer modal en cliquant dehors
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); })
+);
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+buildQtyStates();
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+renderRecap();
+</script>
+</body>
+</html>
